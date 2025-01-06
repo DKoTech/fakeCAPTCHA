@@ -13,7 +13,10 @@ function CAPTCHA(config) {
     this.checked = false;
 
     // 往 head 里灌 css
-    document.getElementsByTagName("head") [0].innerHTML += '<link rel="stylesheet" href="' + path + '/src/stylesheet.css">'
+    var head = document.getElementsByTagName("head") [0]
+    if (head.innerHTML.indexOf('rel="stylesheet"') == -1) {
+        head.innerHTML += '<link rel="stylesheet" href="' + path + '/src/stylesheet.css">'
+    }
 
     // 填充验证器元素
     document.querySelector(config.element).classList.add("captcha");
@@ -92,4 +95,120 @@ function CAPTCHA(config) {
             }, 150);
         }
     }
+}
+
+class CAPTCHAElementNotFound extends Error {
+    /* 
+    CAPTCHAElementNotFound: fakeCAPTCHA+
+    */
+    constructor(message) {
+      super(message); // 调用父类的构造函数
+      this.name = "CAPTCHAElementNotFound"; // 设置错误名称
+    }
+} 
+
+function WordCAPTCHA(config) {
+    /* 
+    WordCAPTCHA: fakeCAPTCHA+
+    config: {
+        CaptchaElement: "[CaptchaElement]",
+        CaptchaSuccess: [bool: IsSuccess],
+        CaptchaDuration: [int: Duration],
+    }
+    */
+    // 检查状态
+    this.checked = false;
+
+    // 检测 head 里面是否有 css 再灌
+    var head = document.getElementsByTagName("head") [0];
+    if (head.innerHTML.indexOf('rel="stylesheet"') == -1) {
+        head.innerHTML += '<link rel="stylesheet" href="' + path + '/src/stylesheet.css">';
+    }
+
+    // 寻找验证器元素
+    this.captcha_element = document.querySelector(config.CaptchaElement);
+    if (this.captcha_element == null) {
+        // 找不到就直接罢工
+        throw new CAPTCHAElementNotFound("无法在页面中找到对象：" + config.CaptchaElement + "。\nCould find object: " + config.CaptchaElement + ".");
+    }
+
+    // 随机单词图片
+    var pictures = ["kite", "slide"];
+    var randomPicture = pictures[Math.floor(Math.random() * pictures.length)];
+
+    // 填入 word-captcha-form 元素与 class
+    this.captcha_element.classList.add("word-captcha");
+    this.captcha_element.innerHTML = `<div class="word-captcha-form">
+        <div class="word-captcha-title" id="word-captcha-title" style="display: block;">
+            <p>
+                请输入
+                <h3 class="subtitle">下面图片展示的内容</h3>
+            </p>
+        </div>
+        <div class="word-captcha-image" id="word-captcha-image" style="display: block;">
+            <img src="` + path + '/src/randomWords/' + randomPicture + `.png" alt="CAPTCHA"/>
+        </div>
+        <div class="word-captcha-response" style="display: block;">
+            <div class="success" id="word-captcha-response-success" style="display: none;">
+                <center><img src="` + path + `/src/Correct.png" width="128" height="128"/></center>
+                <br>
+                <center>已通过人机验证。</center>
+            </div>
+            <div class="failure" id="word-captcha-response-failure" style="display: none;">
+                <center><img src="` + path + `/src/Incorrect.png" width="128" height="128"/></center>
+                <br>
+                <center>未通过人机验证。</center>
+            </div>
+        </div>
+        <div class="word-captcha-submit" id="word-captcha-submit" style="display: block;">
+            <input type="text" placeholder="请输入内容 (不包括句子，只输入单词)" id="word-captcha-submit-content" class="word-captcha-submit-content"/>
+            <button id="word-captcha-submit-button" class="word-captcha-submit-button">提交</button>
+        </div>
+    </div>`;
+
+    // 密码的 我找半天问题发现 querySelector 填错了我服了我自己
+    // 绑定提交事件
+    document.getElementById("word-captcha-submit-button").addEventListener("click", function(){
+        // 寻找 success 的提示和 failure 的提示
+        var success = document.querySelector("#word-captcha-response-success");
+        var failure = document.querySelector("#word-captcha-response-failure");
+
+        // 寻找要隐藏的组件
+        var title = document.querySelector("#word-captcha-title");
+        var image = document.querySelector("#word-captcha-image");
+        var submit = document.querySelector("#word-captcha-submit");
+
+        // 判断
+        if (!self.checked) {
+            var button_self = document.getElementById("word-captcha-submit-button");
+            button_self.innerHTML = "请稍等"
+            button_self.disabled = true;
+            window.setTimeout(function (){
+                if (config.CaptchaSuccess) {
+                    if (title && image && submit) {
+                        title.style.display = "none"; // 隐藏
+                        image.style.display = "none";
+                        submit.style.display = "none";
+                        success.style.display = "";
+                        success.classList.add("response-animation");
+                    }
+                    else {
+                        throw new CAPTCHAElementNotFound("额，我也不知道怎么回事.jpg");
+                    }
+                } else {
+                    if (title && image && submit) {
+                        title.style.display = "none"; // 隐藏
+                        image.style.display = "none";
+                        submit.style.display = "none";
+                        failure.style.display = "";
+                        success.classList.add("response-animation");
+                    }
+                    else {
+                        throw new CAPTCHAElementNotFound("额，我也不知道怎么回事.jpg");
+                    }
+                }
+                self.checked = true;
+            }, config.CaptchaDuration);
+        }
+    });
 }

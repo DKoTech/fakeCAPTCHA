@@ -20,6 +20,10 @@
         <br>
         <div id="captcha_plus"></div> <!-- CAPTCHA div -->
         <br>
+        <p>PLUS 版 fakeCAPTCHA WordCAPTCHA:</p>
+        <br>
+        <div id="captcha_plus_word"></div> <!-- CAPTCHA div -->
+        <br>
     </div>
 </body>
 <script>
@@ -48,4 +52,12 @@
         Replace: true,
     };
     captchaPlus = new CAPTCHA(config);
+
+    // PLUS_WORD
+    var word_config = {
+        CaptchaElement: "#captcha_plus_word",
+        CaptchaSuccess: true,
+        CaptchaDuration: 1500,
+    }
+    captchaPlusWord = new WordCAPTCHA(word_config);
 </script>
